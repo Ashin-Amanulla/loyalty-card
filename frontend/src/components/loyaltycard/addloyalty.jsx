@@ -15,15 +15,13 @@ import {
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import StyledTextfield from "../../ui/styledTextfield";
 import StyledSelectField from "../../ui/styledSelectField";
 import { getCategory } from "../../services/category";
 import { formatDate } from "../../utils/dateFormat";
-import {
-  addLoyalityCard,
-  updateLoyalityCard,
-} from "../../services/loyaltyCard";
+import { addLoyalityCard, updateLoyalityCard } from "../../services/loyaltyCard";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import { getBrand } from "../../services/brands";
@@ -31,43 +29,28 @@ import FileUpload from "../../utils/FileUpload";
 import { uploadFile } from "../../services/upload";
 import { criteria } from "../../assets/json/criteria";
 
-export default function AddLoyalty({
-  open,
-  onClose,
-  isUpdate,
-  loyalityData,
-  isSubmitted,
-}) {
+export default function AddLoyalty({ open, onClose, isUpdate, loyalityData, isSubmitted }) {
   const [selectedFile, setSelectedFile] = useState();
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
+
   useEffect(() => {
     getCategory().then((res) => {
       if (res.status) {
-        setCategories(
-          res.result.map((item) => ({ label: item.title, value: item._id }))
-        );
+        setCategories(res.result.map((item) => ({ label: item.title, value: item._id })));
       }
     });
 
     getBrand().then((res) => {
       if (res.status) {
-        setBrands(
-          res.result.map((item) => ({ label: item.title, value: item._id }))
-        );
+        setBrands(res.result.map((item) => ({ label: item.title, value: item._id })));
       }
     });
   }, []);
-  const {
-    control,
-    handleSubmit,
-    setError,
-    reset,
-    formState: { errors },
-  } = useForm();
+
+  const { control, handleSubmit, setError, reset, formState: { errors } } = useForm();
 
   useEffect(() => {
-    console.log(loyalityData);
     reset({
       title: isUpdate ? loyalityData["title"] : "",
       description: isUpdate ? loyalityData["description"] : "",
@@ -75,8 +58,8 @@ export default function AddLoyalty({
       OTP: isUpdate ? loyalityData["OTP"] : "",
       coin_cost: isUpdate ? loyalityData["coin_cost"] : "",
       coin_worth: isUpdate ? loyalityData["coin_worth"] : "",
-      starts_from: isUpdate ? dayjs(loyalityData["starts_from"]) : "",
-      expiry: isUpdate ? dayjs(loyalityData["expiry"]) : null,
+      starts_from: isUpdate && loyalityData["starts_from"] ? dayjs(loyalityData["starts_from"]) : null,
+      expiry: isUpdate && loyalityData["expiry"] ? dayjs(loyalityData["expiry"]) : null,
       no_of_cards: isUpdate ? loyalityData["no_of_cards"] : "",
       category: isUpdate ? loyalityData["category"] : "",
       availability_criteria: isUpdate ? loyalityData["availability_criteria"] : "",
@@ -97,19 +80,17 @@ export default function AddLoyalty({
       }
       addCard({ ...data });
     }
-    console.log(data);
   };
 
-  const addCard = ({ category, brand, expiry,starts_from,availability_criteria, ...data }) => {
+  const addCard = ({ category, brand, expiry, starts_from, availability_criteria, ...data }) => {
     let dt = {
       category: category.value,
       brand: brand.value,
       expiry: formatDate(expiry),
       starts_from: formatDate(starts_from),
-      availability_criteria:availability_criteria.value,
+      availability_criteria: availability_criteria.value,
       ...data,
     };
-    console.log(dt);
     addLoyalityCard(dt)
       .then((res) => {
         if (res.status) {
@@ -123,21 +104,20 @@ export default function AddLoyalty({
       });
   };
 
-  const editCard = ({ category, brand, expiry, status,starts_from,availability_criteria, ...data }) => {
+  const editCard = ({ category, brand, expiry, status, starts_from, availability_criteria, ...data }) => {
     let dt = {
       category: category.value,
       brand: brand.value,
       expiry: formatDate(expiry),
       starts_from: formatDate(starts_from),
-      availability_criteria:availability_criteria.value,
+      availability_criteria: availability_criteria.value,
       status: status ? "active" : "inactive",
       ...data,
     };
-    console.log(dt);
     updateLoyalityCard(loyalityData._id, dt)
       .then((res) => {
         if (res.status) {
-          toast.success("Successfully Upated");
+          toast.success("Successfully Updated");
           isSubmitted();
           onClose();
         }
@@ -155,305 +135,193 @@ export default function AddLoyalty({
   const onFileChange = (e) => {
     setSelectedFile(e.files[0]);
   };
+
   return (
-    <Dialog open={open} maxWidth="sm" fullWidth>
-      <Stack
-        direction={"row"}
-        justifyContent={"space-between"}
-        alignItems={"center"}
-        p={2}
-      >
-        <Typography
-          variant="subtitle1"
-          sx={{ color: "primary.dark", fontWeight: 600 }}
-        >
-          {isUpdate ? "Edit" : "Add"} Loyalty card
-        </Typography>
-        <IconButton onClick={dialogClose}>
-          <Close />
-        </IconButton>
-      </Stack>
-      <Divider />
-      <form onSubmit={handleSubmit(onSubmit)} autoComplete="off">
-        <Stack p={2} spacing={2}>
-          <FileUpload
-            onFileSelect={onFileChange}
-            image={isUpdate ? loyalityData["image"] : null}
-          />
-          {errors.file && (
-            <span style={errorMsgStyle}>{errors.file.message}</span>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Dialog open={open} maxWidth="sm" fullWidth>
+        <Stack direction={"row"} justifyContent={"space-between"} alignItems={"center"} p={2}>
+          <Typography variant="subtitle1" sx={{ color: "primary.dark", fontWeight: 600 }}>
+            {isUpdate ? "Edit" : "Add"} Loyalty card
+          </Typography>
+          <IconButton onClick={dialogClose}>
+            <Close />
+          </IconButton>
+        </Stack>
+        <Divider />
+        <form onSubmit={handleSubmit(onSubmit)} autoComplete="off">
+          <Stack p={2} spacing={2}>
+            <FileUpload onFileSelect={onFileChange} image={isUpdate ? loyalityData["image"] : null} />
+            {errors.file && <span style={errorMsgStyle}>{errors.file.message}</span>}
+            <Stack>
+              <Typography variant="subtitle2">Loyalty Card Name</Typography>
+              <Controller
+                name="title"
+                control={control}
+                render={({ field }) => (
+                  <>
+                    <StyledTextfield placeholder="Enter loyalty name" {...field} />
+                    {errors.title && <span style={errorMsgStyle}>{errors.title.message}</span>}
+                  </>
+                )}
+                rules={{ required: "Enter loyalty name" }}
+              />
+            </Stack>
+            <Stack>
+              <Typography variant="subtitle2">Description</Typography>
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <>
+                    <StyledTextfield placeholder="Enter description" {...field} />
+                    {errors.description && <span style={errorMsgStyle}>{errors.description.message}</span>}
+                  </>
+                )}
+                rules={{ required: "Enter description" }}
+              />
+            </Stack>
+            <Stack direction={"column"}>
+              <Typography variant="subtitle2">Brand</Typography>
+              <Controller
+                name="brand"
+                control={control}
+                render={({ field }) => (
+                  <>
+                    <StyledSelectField options={brands} placeholder={"select Brand"} {...field} />
+                    {errors.brand && <span style={errorMsgStyle}>{errors.brand.message}</span>}
+                  </>
+                )}
+                rules={{ required: "select brand" }}
+              />
+            </Stack>
+            <Stack>
+              <Stack direction={"row"} spacing={0.5}>
+                <Stack flexGrow={1}>
+                  <Typography variant="subtitle2">OTP</Typography>
+                  <Controller
+                    name="OTP"
+                    control={control}
+                    render={({ field }) => (
+                      <StyledTextfield placeholder="Enter otp code" {...field} sx={{ flexGrow: 1 }} />
+                    )}
+                    rules={{ required: "Enter 4 digit vendor code" }}
+                  />
+                  {errors.OTP && <span style={errorMsgStyle}>{errors.OTP.message}</span>}
+                </Stack>
+                <Stack flexGrow={1}>
+                  <Typography variant="subtitle2">Coins</Typography>
+                  <Controller
+                    name="coin_cost"
+                    control={control}
+                    render={({ field }) => (
+                      <StyledTextfield placeholder="Enter coins" {...field} sx={{ flexGrow: 1 }} />
+                    )}
+                    rules={{ required: "Enter cost" }}
+                  />
+                  {errors.coin_cost && <span style={errorMsgStyle}>{errors.coin_cost.message}</span>}
+                </Stack>
+                <Stack flexGrow={1}>
+                  <Typography variant="subtitle2">Currency Worth</Typography>
+                  <Controller
+                    name="coin_worth"
+                    control={control}
+                    render={({ field }) => (
+                      <StyledTextfield placeholder="Enter worth" {...field} sx={{ flexGrow: 1 }} rightIcon={"OMR"} />
+                    )}
+                    rules={{ required: "Enter worth" }}
+                  />
+                  {errors.coin_worth && <span style={errorMsgStyle}>{errors.coin_worth.message}</span>}
+                </Stack>
+              </Stack>
+            </Stack>
+            <Stack direction={"row"} spacing={1}>
+              <Stack flexGrow={1}>
+                <Typography variant="subtitle2">Starts from</Typography>
+                <Controller
+                  name="starts_from"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      <DatePicker format="MM/DD/YYYY" {...field} sx={{ height: "40px" }} slotProps={{ textField: { size: "small" } }} />
+                      {errors.starts_from && <span style={errorMsgStyle}>{errors.starts_from.message}</span>}
+                    </>
+                  )}
+                  rules={{ required: "Enter Offer starts date" }}
+                />
+              </Stack>
+              <Stack flexGrow={1}>
+                <Typography variant="subtitle2">Ends On</Typography>
+                <Controller
+                  name="expiry"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      <DatePicker format="MM/DD/YYYY" {...field} sx={{ height: "40px" }} slotProps={{ textField: { size: "small" } }} />
+                      {errors.expiry && <span style={errorMsgStyle}>{errors.expiry.message}</span>}
+                    </>
+                  )}
+                  rules={{ required: "Select Date" }}
+                />
+              </Stack>
+            </Stack>
+            <Stack direction={"row"} spacing={1}>
+              <Stack flexGrow={1}>
+                <Typography variant="subtitle2">Category</Typography>
+                <Controller
+                  name="category"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      <StyledSelectField options={categories} placeholder={"Select Category"} {...field} />
+                      {errors.category && <span style={errorMsgStyle}>{errors.category.message}</span>}
+                    </>
+                  )}
+                  rules={{ required: "Select category" }}
+                />
+              </Stack>
+              <Stack flexGrow={1}>
+                <Typography variant="subtitle2">Availability criteria</Typography>
+                <Controller
+                  name="availability_criteria"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      <StyledSelectField options={criteria} placeholder={"Select Criteria"} {...field} />
+                      {errors.availability_criteria && <span style={errorMsgStyle}>{errors.availability_criteria.message}</span>}
+                    </>
+                  )}
+                  rules={{ required: "Select criteria" }}
+                />
+              </Stack>
+            </Stack>
+          </Stack>
+          {isUpdate && (
+            <Stack direction={"row"} justifyContent={"end"}>
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <FormControlLabel control={<Switch defaultChecked={loyalityData["Status"] === "active"} />} label="Status" {...field} />
+                )}
+              />
+            </Stack>
           )}
-          <Stack>
-            <Typography variant="subtitle2">Loyalty Card Name </Typography>
-            <Controller
-              name="title"
-              control={control}
-              render={({ field }) => (
-                <>
-                  <StyledTextfield
-                    placeholder="Enter loyalty name"
-                    {...field}
-                  />
-                  {errors.title && (
-                    <span style={errorMsgStyle}>{errors.title.message}</span>
-                  )}
-                </>
-              )}
-              rules={{ required: "Enter loyalty name" }}
-            />
+          <Stack direction={"row"} justifyContent={"end"} p={2} spacing={2}>
+            <Button variant="outlined" sx={{ borderColor: "#777", color: "#777" }} onClick={dialogClose}>
+              Cancel
+            </Button>
+            <Button variant="outlined" type="submit">
+              {isUpdate ? "Update" : "Add"}
+            </Button>
           </Stack>
-          <Stack>
-            <Typography variant="subtitle2">Description</Typography>
-            <Controller
-              name="description"
-              control={control}
-              render={({ field }) => (
-                <>
-                  <StyledTextfield placeholder="Enter description" {...field} />
-                  {errors.description && (
-                    <span style={errorMsgStyle}>
-                      {errors.description.message}
-                    </span>
-                  )}
-                </>
-              )}
-              rules={{ required: "Enter description" }}
-            />
-          </Stack>
-          <Stack direction={"column"}>
-            <Typography variant="subtitle2">Brand </Typography>
-            <Controller
-              name="brand"
-              control={control}
-              render={({ field }) => (
-                <>
-                  <StyledSelectField
-                    options={brands}
-                    placeholder={"select Brand"}
-                    {...field}
-                  />
-                  {errors.brand && (
-                    <span style={errorMsgStyle}>{errors.brand.message}</span>
-                  )}
-                </>
-              )}
-              rules={{ required: "select brand" }}
-            />
-          </Stack>
-          <Stack>
-            <Stack direction={"row"} spacing={0.5}>
-              <Stack flexGrow={1}>
-                <Typography variant="subtitle2"> OTP</Typography>
-                <Controller
-                  name="OTP"
-                  control={control}
-                  render={({ field }) => (
-                    <StyledTextfield
-                      placeholder="Enter otp code"
-                      {...field}
-                      sx={{ flexGrow: 1 }}
-                    />
-                  )}
-                  rules={{ required: "Enter 4 digit vendor code" }}
-                />
-                {errors.OTP && (
-                  <span style={errorMsgStyle}>{errors.OTP.message}</span>
-                )}
-              </Stack>
-              <Stack flexGrow={1}>
-                <Typography variant="subtitle2">Coins</Typography>
-                <Controller
-                  name="coin_cost"
-                  control={control}
-                  render={({ field }) => (
-                    <StyledTextfield
-                      placeholder="Enter coins"
-                      {...field}
-                      sx={{ flexGrow: 1 }}
-                    />
-                  )}
-                  rules={{ required: "Enter cost" }}
-                />
-                {errors.coin_cost && (
-                  <span style={errorMsgStyle}>{errors.coin_cost.message}</span>
-                )}
-              </Stack>
-              <Stack flexGrow={1}>
-                <Typography variant="subtitle2">Currency Worth</Typography>
-                <Controller
-                  name="coin_worth"
-                  control={control}
-                  render={({ field }) => (
-                    <StyledTextfield
-                      placeholder="Enter worth"
-                      {...field}
-                      sx={{ flexGrow: 1 }}
-                      rightIcon={"OMR"}
-                    />
-                  )}
-                  rules={{ required: "Enter worth" }}
-                />
-                {errors.coin_worth && (
-                  <span style={errorMsgStyle}>{errors.coin_worth.message}</span>
-                )}
-              </Stack>
-            </Stack>
-          </Stack>
-
-          <Stack direction={"row"} spacing={1}>
-            <Stack flexGrow={1}>
-              <Typography variant="subtitle2">Starts from</Typography>
-              <Controller
-                name="starts_from"
-                control={control}
-                render={({ field }) => (
-                  <>
-                    <DatePicker
-                      format="MM/DD/YYYY"
-                      {...field}
-                      sx={{ height: "40px" }}
-                      slotProps={{ textField: { size: "small" } }}
-                    />
-
-                    {errors.starts_from && (
-                      <span style={errorMsgStyle}>
-                        {errors.starts_from.message}
-                      </span>
-                    )}
-                  </>
-                )}
-                rules={{ required: "Enter Offer starts date" }}
-              />
-            </Stack>
-            <Stack flexGrow={1}>
-              <Typography variant="subtitle2">Ends On</Typography>
-              <Controller
-                name="expiry"
-                control={control}
-                render={({ field }) => (
-                  <>
-                    <DatePicker
-                      format="MM/DD/YYYY"
-                      {...field}
-                      sx={{ height: "40px" }}
-                      slotProps={{ textField: { size: "small" } }}
-                    />
-                    {errors.expiry && (
-                      <span style={errorMsgStyle}>{errors.expiry.message}</span>
-                    )}
-                  </>
-                )}
-                rules={{ required: "Select Date" }}
-              />
-            </Stack>
-          </Stack>
-
-          <Stack direction={"row"} spacing={1}>
-            <Stack flexGrow={1}>
-              <Typography variant="subtitle2">Number of Cards</Typography>
-              <Controller
-                name="no_of_cards"
-                control={control}
-                render={({ field }) => (
-                  <>
-                    <StyledTextfield
-                      type={"number"}
-                      placeholder="Enter Number of cards"
-                      {...field}
-                      sx={{ flexGrow: 1 }}
-                    />
-                    {errors.no_of_cards && (
-                      <span style={errorMsgStyle}>
-                        {errors.no_of_cards.message}
-                      </span>
-                    )}
-                  </>
-                )}
-                rules={{ required: "Enter Number of cards" }}
-              />
-            </Stack>
-            <Stack flexGrow={1}>
-              <Typography variant="subtitle2">Availabiity Criteria</Typography>
-              <Controller
-                name="availability_criteria"
-                control={control}
-                render={({ field }) => (
-                  <>
-                    <StyledSelectField
-                    options={criteria}
-                    placeholder={"select Criteria"}
-                    {...field}
-                  />
-                    {errors.availability_criteria && (
-                      <span style={errorMsgStyle}>
-                        {errors.availability_criteria.message}
-                      </span>
-                    )}
-                  </>
-                )}
-                rules={{ required: "Select Availability Criteria" }}
-              />
-            </Stack>
-          </Stack>
-          <Stack>
-            <Typography variant="subtitle2">Category</Typography>
-            <Controller
-              name="category"
-              control={control}
-              render={({ field }) => (
-                <>
-                  <StyledSelectField
-                    options={categories}
-                    placeholder={"select category"}
-                    {...field}
-                  />
-                  {errors.category && (
-                    <span style={errorMsgStyle}>{errors.category.message}</span>
-                  )}
-                </>
-              )}
-              rules={{ required: "Enter the tags" }}
-            />
-          </Stack>
-        </Stack>
-        {isUpdate && (
-          <Stack direction={"row"} justifyContent={"end"}>
-            <Controller
-              name="status"
-              control={control}
-              render={({ field }) => (
-                <FormControlLabel
-                  control={
-                    <Switch
-                      defaultChecked={loyalityData["Status"] === "active"}
-                    />
-                  }
-                  label="Status"
-                  {...field}
-                />
-              )}
-            />
-          </Stack>
-        )}
-        <Stack direction={"row"} justifyContent={"end"} p={2} spacing={2}>
-          <Button
-            variant="outlined"
-            sx={{ borderColor: "#777", color: "#777" }}
-            onClick={dialogClose}
-          >
-            Cancel
-          </Button>
-          <Button variant="outlined" type="submit">
-            {isUpdate ? "Update" : "Add"}
-          </Button>
-        </Stack>
-      </form>
-    </Dialog>
+        </form>
+      </Dialog>
+    </LocalizationProvider>
   );
 }
 
 const errorMsgStyle = {
   color: "red",
   fontSize: "12px",
-  fontStyle: "italic",
+  marginTop: "5px",
 };

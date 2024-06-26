@@ -9,8 +9,13 @@ export const criteria = [{
     value: 'Once in a month'
 },
 {
-
     id: 3,
+    label: 'Twice in a month',
+    value: 'Twice in a month'
+},
+{
+
+    id: 4,
     label: 'One time',
     value: 'One time'
 
